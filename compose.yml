@@ -35,17 +35,27 @@ services:
     container_name: ollama
     restart: unless-stopped
     ports:
-      - "11434:11434"      # Ollama HTTP API
+      - "11434:11434"
     volumes:
       - ollama-data:/root/.ollama
     environment:
       - OLLAMA_HOST=0.0.0.0
-    # Uncomment if you want GPU passthrough on Linux / WSL2 with NVIDIA
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - capabilities: ["gpu"]
+      # choose your default model here
+      - OLLAMA_DEFAULT_MODEL=llama3
+    # Start server, wait a bit, pull model once, then keep serving
+    command: >
+      sh -c "
+        ollama serve &
+        pid=$$!
+        # give the server a moment to come up
+        sleep 8
+        # pull default model if not present yet
+        if ! ollama list | grep -q \"${OLLAMA_DEFAULT_MODEL}\"; then
+          echo \"[ollama] pulling default model: ${OLLAMA_DEFAULT_MODEL}\"
+          ollama pull \"${OLLAMA_DEFAULT_MODEL}\"
+        fi
+        wait $pid
+      "
 
   # 4) Web UI for the LLM (ChatGPT-like front-end)
   llm-ui:

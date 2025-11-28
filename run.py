@@ -9,6 +9,7 @@
 6. Runs: docker compose up -d
 """
 
+import argparse
 import getpass
 import platform
 import shutil

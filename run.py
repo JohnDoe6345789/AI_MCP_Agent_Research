@@ -36,8 +36,7 @@ def r_prompt_new_env(env_path: Path) -> None:
         print("Aborting: env file is required.")
         sys.exit(1)
     print(
-        "You can leave any value blank if you do not want to set it.
-"
+        "You can leave any value blank if you do not want to set it."
         "Values are written to the env file in KEY=VALUE format."
     )
     github_pat = getpass.getpass(

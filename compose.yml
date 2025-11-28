@@ -95,7 +95,7 @@ services:
     tty: true
     environment:
       # Create a PAT with appropriate scopes and drop it here or via .env
-      - GITHUB_PERSONAL_ACCESS_TOKEN=your-token-here
+      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN}
     # Same story: usually spawned via `docker run -i` or `docker compose run`
     # from your MCP client, not as a long-running HTTP server. :contentReference[oaicite:1]{index=1}
 

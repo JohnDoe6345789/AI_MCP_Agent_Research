@@ -40,9 +40,7 @@ def ensure_gitignore(out_path: Path) -> None:
     rel = str(out_path)
     if rel not in content:
         content.append(rel)
-        gi.write_text("
-".join(content) + "
-")
+        gi.write_text("".join(content) + "")
 
 
 if __name__ == "__main__":

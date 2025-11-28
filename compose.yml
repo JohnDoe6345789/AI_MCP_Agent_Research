@@ -1,0 +1,94 @@
+services:
+  # 1) Browser IDE (VS Code in browser, Monaco under the hood)
+  web-ide:
+    image: lscr.io/linuxserver/openvscode-server:latest
+    container_name: web-ide
+    environment:
+      - PUID=1000          # adjust to your host UID if needed
+      - PGID=1000          # adjust to your host GID if needed
+      - TZ=Europe/London
+    volumes:
+      - ./workspace:/workspace
+      - ./ovscode-config:/config
+    working_dir: /workspace
+    ports:
+      - "8080:3000"        # http://localhost:8080
+    restart: unless-stopped
+
+  # 2) SSH dev box with git + GitHub CLI
+  ssh-dev:
+    build:
+      context: ./ssh-dev
+    container_name: ssh-dev
+    environment:
+      - TZ=Europe/London
+    volumes:
+      - ./workspace:/workspace
+    working_dir: /workspace
+    ports:
+      - "2222:22"          # ssh dev@localhost -p 2222
+    restart: unless-stopped
+
+  # 3) Local LLM backend (Ollama)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"      # Ollama HTTP API
+    volumes:
+      - ollama-data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    # Uncomment if you want GPU passthrough on Linux / WSL2 with NVIDIA
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - capabilities: ["gpu"]
+
+  # 4) Web UI for the LLM (ChatGPT-like front-end)
+  llm-ui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: llm-ui
+    restart: unless-stopped
+    depends_on:
+      - ollama
+    environment:
+      - OPENAI_API_BASE=http://ollama:11434
+      - OLLAMA_BASE_URL=http://ollama:11434
+      # Set this to a long random string in real use
+      - WEBUI_SECRET_KEY=changeme
+    ports:
+      - "3000:8080"        # http://localhost:3000
+    volumes:
+      - openwebui-data:/app/backend/data
+
+  # 5) MCP Git server (local git operations on ./workspace)
+  git-mcp:
+    image: mcp/git:latest
+    container_name: git-mcp
+    stdin_open: true
+    tty: true
+    working_dir: /workspace
+    volumes:
+      - ./workspace:/workspace
+    # Typically not started with `up`, but via:
+    #   docker compose run --rm git-mcp
+    # from an MCP-capable LLM client. :contentReference[oaicite:0]{index=0}
+
+  # 6) MCP GitHub server (deep GitHub integration)
+  github-mcp:
+    image: ghcr.io/github/github-mcp-server:latest
+    container_name: github-mcp
+    stdin_open: true
+    tty: true
+    environment:
+      # Create a PAT with appropriate scopes and drop it here or via .env
+      - GITHUB_PERSONAL_ACCESS_TOKEN=your-token-here
+    # Same story: usually spawned via `docker run -i` or `docker compose run`
+    # from your MCP client, not as a long-running HTTP server. :contentReference[oaicite:1]{index=1}
+
+volumes:
+  ollama-data:
+  openwebui-data:
